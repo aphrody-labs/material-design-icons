@@ -1,0 +1,32 @@
+name: update-symbols
+
+# Bun port of the upstream weekly Python job (.github/workflows/main.yml on master).
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 2 * * 5"
+
+jobs:
+  update-symbols:
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    # The Aphrody Bun glibc build needs glibc 2.43 (Ubuntu 26.04).
+    container: ubuntu:26.04
+    timeout-minutes: 60
+    steps:
+      - run: apt-get update -q && apt-get install -qy --no-install-recommends ca-certificates curl git jq unzip
+      - uses: actions/checkout@v5
+        with:
+          ref: aphrody
+          fetch-depth: 1
+      - uses: aphrody-labs/bun/.github/actions/setup-bun@main
+      - uses: astral-sh/setup-uv@v6
+      - run: bun install --frozen-lockfile
+      - run: bun run update
+      - run: bun run check
+      - name: commit
+        run: |
+          git add -A symbols variablefont update
+          git diff --staged --quiet || git -c user.name='GitHub Actions Bot' -c user.email='<>' commit -m 'chore(symbols): mise à jour depuis Google Fonts'
+          git push origin aphrody

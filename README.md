@@ -1,3 +1,116 @@
+## Aphrody branch (`aphrody`)
+
+Fork of [google/material-design-icons](https://github.com/google/material-design-icons) reduced to the
+optimized Material Symbols sources: web and desktop variable fonts, one optimized SVG set per style, and a
+manifest. Every legacy asset (Material Icons fonts, `png/`, `android/`, `ios/`, `src/`, multi-size and
+multi-weight symbol exports) is deleted on this branch only, except the 24 px Material Icons SVGs of the 45
+names that no Material Symbol, ligature alias or font glyph covers; `master` mirrors upstream and the history
+is untouched. The tooling is Bun (`bun install`, `bun run`, `bun test`); there is no npm, yarn or Node step.
+
+### Layout
+
+| Path | Content |
+| --- | --- |
+| `variablefont/MaterialSymbols{Outlined,Rounded,Sharp}[FILL,GRAD,opsz,wght].woff2` | web: variable WOFF2, every axis (FILL 0..1, wght 100..700, GRAD -50..200, opsz 20..48) |
+| `variablefont/MaterialSymbols{Outlined,Rounded,Sharp}[FILL,GRAD,opsz,wght].ttf` | desktop: variable TrueType, same glyphs and hinting, glyph names dropped (`post` v3) |
+| `variablefont/*.codepoints` | `name hex` lines of every font ligature (upstream format) |
+| `symbols/web/<name>/materialsymbols<style>/<name>_24px.svg` | optimized SVG, fill 0 |
+| `symbols/web/<name>/materialsymbols<style>/<name>_fill1_24px.svg` | optimized SVG, fill 1 |
+| `src/<category>/<name>/materialicons<theme>/24px.svg` | legacy Material Icons kept for the 45 uncovered names (themes `materialicons`, `…outlined`, `…round`, `…sharp`, `…twotone`), optimized in place |
+| `symbols/manifest.json` | index of everything above (format below) |
+| `update/current_versions.json` | Google Fonts version of every symbol (`symbols::<name>`), drives `bun run update` |
+
+SVGs are the 24 px design at weight 400, grade 0, drawn in `viewBox="0 0 24 24"` (`width`/`height` 24),
+one `<path>` each, no metadata. They are an exact affine rescale of the upstream drawing (`0 -960 960 960`,
+older `0 96 960 960`, or pixel units without `viewBox`) followed by svgo at 3 decimals (4 are lossless but
+save almost nothing, 2 fail the fidelity thresholds). A style directory is absent when Google does not
+publish that symbol in that style. `bun run fidelity` renders 50 spread witnesses plus every legacy file at 192 px against upstream:
+no pixel may change by 128 levels or more and at most 0.1 % of pixels by more than 16 levels.
+
+### `symbols/manifest.json` (schema 1)
+
+```jsonc
+{
+ "schema": 1,
+ "styles": ["outlined", "rounded", "sharp"],
+ "svg": { "viewBox": "0 0 24 24", "width": 24, "height": 24, "opsz": 24, "wght": 400, "grad": 0, "fill": [0, 1] },
+ "fonts": {
+  "outlined": {
+   "family": "Material Symbols Outlined",
+   "ttf": "variablefont/MaterialSymbolsOutlined[FILL,GRAD,opsz,wght].ttf",
+   "woff2": "variablefont/MaterialSymbolsOutlined[FILL,GRAD,opsz,wght].woff2",
+   "codepoints": "variablefont/MaterialSymbolsOutlined[FILL,GRAD,opsz,wght].codepoints",
+   "sha256": { "ttf": "<hex>", "woff2": "<hex>" },
+   "bytes": { "ttf": 0, "woff2": 0 },
+   "glyphs": 0,
+   "axes": { "FILL": { "min": 0, "default": 0, "max": 1 }, "wght": { … }, "GRAD": { … }, "opsz": { … } }
+  },
+  "rounded": { … }, "sharp": { … }
+ },
+ "count": 0,
+ "symbols": {
+  "home": { "codepoint": "e9b2", "svg": { "outlined": ["<fill 0 path>", "<fill 1 path>"], "rounded": […], "sharp": […] } },
+  "<SVG published before the fonts>": { "codepoint": null, "svg": { … } }
+ },
+ "aliases": { "<font ligature without its own SVG>": "<symbol name with the same codepoint>" },
+ "fontOnly": { "<font ligature drawn by no SVG>": "<codepoint>" },
+ "legacy": { "facebook": { "materialicons": "src/…/facebook/materialicons/24px.svg", "materialiconsoutlined": "…" } }
+}
+```
+
+- Paths are relative to the repository root; `codepoint` is lowercase hex, the glyph is the character
+  `U+<codepoint>` in the Private Use Area (the same in the three fonts).
+- Keys are sorted; each line of the file holds one entry, so updates diff well. Every font ligature is
+  exactly one of: a `symbols` entry, an `aliases` entry or a `fontOnly` entry (`bun test` checks it).
+- Resolving `symbol:<name>`, in order:
+  1. `symbols[name]`, else `symbols[aliases[name]]`: SVG = `svg[style][fill]` (default style `outlined`,
+     fill 0; fall back to the first style present); font glyph = `U+<codepoint>` (or the ligature `name`)
+     in `fonts[style].ttf` (desktop) or `.woff2` (web), with the variation axes of `fonts[style].axes`.
+     `codepoint` is `null` for an SVG Google published before the fonts: SVG only.
+  2. `fontOnly[name]`: font glyph `U+<codepoint>` only, no SVG.
+  3. `legacy[name]`: Material Icons SVG only (theme `materialicons` = filled, `materialiconsoutlined` =
+     outlined, `materialiconsround` = rounded, `materialiconssharp` = sharp), not in the fonts nor on the CDN.
+  `bun run manifest` fails when an update makes the Symbols cover a legacy name: delete its `src/` files.
+
+### CDN (`cdn.aphrody.com`)
+
+`bun run cdn build` writes `dist/cdn/` (`h/`, `s/symbols/`); `bun run cdn publish --host dbfr` uploads it to
+`/home/ubuntu/apps/cdn/symbols/releases/<id>` and switches `/home/ubuntu/apps/cdn/symbols/current`, a static
+root of `aphrody-fonts-proxy` (aphrody repository, `tools/config/asset-catalog.json` `releases`);
+`bun run cdn verify` checks every URL (200, content type, CORS `*`, immutable cache on hashed files).
+
+- `https://cdn.aphrody.com/s/symbols/material-symbols.css`: stable URL, short cache. `@font-face` per
+  style (variable WOFF2, `font-display: block`) and the Google classes `.material-symbols-outlined`,
+  `.material-symbols-rounded`, `.material-symbols-sharp` (FILL/GRAD through `--material-symbols-fill` and
+  `--material-symbols-grad`).
+- `https://cdn.aphrody.com/h/<sha256[0..16]>.{css,woff2,ttf}`: content-addressed, `immutable`, one year.
+- `https://cdn.aphrody.com/s/symbols/release.json`: commit, URLs, sizes and sha256 of the current release.
+
+### Commands
+
+```sh
+bun install
+bun run update            # new/changed symbols and fonts from Google Fonts, then build
+bun run build             # fonts (TTF + WOFF2 + codepoints), SVG optimization, manifest
+bun run check             # fails if any SVG, the manifest or a font is not in optimized form
+bun run subset --text "home search settings" [--styles outlined] [--axes "FILL=0:1 wght=400"]
+bun run fidelity          # renders 50 witness + every legacy SVG, optimized vs origin/master, with resvg
+bun test && bun run typecheck && bun run lint && bun run format:check
+```
+
+Font work (WOFF2 Brotli encode/decode, subsetting, instancing) runs fontTools through `uvx` at a pinned
+version (`scripts/lib/fonttools.ts`): it is the reference implementation of these formats, with no Bun or
+Rust tool of equivalent output and verification today, and no Python file is tracked. Everything else
+(fetching, cmap/GSUB parsing, SVG rewriting, manifest, CDN release) is TypeScript run by Bun.
+
+### Upstream sync
+
+`master` fast-forwards to `upstream/master`. `aphrody` takes upstream changes from their source, Google
+Fonts, with `bun run update` (the same metadata and endpoints as upstream `update_symbols.py`), then
+commits; a merge of `master` is never needed. The history of both branches is never rewritten.
+
+---
+
 ## Material Symbols / Material Icons
 
 These are two different official icon sets from Google, using the same underlying designs. Material Symbols is the current set, introduced in April 2022, built on variable font technology. Material Icons is the classic set, but no longer updated. More details below.

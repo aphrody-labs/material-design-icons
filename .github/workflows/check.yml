@@ -1,0 +1,28 @@
+name: check
+
+on:
+  push:
+    branches: [aphrody]
+  pull_request:
+    branches: [aphrody]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    # The Aphrody Bun glibc build needs glibc 2.43 (Ubuntu 26.04).
+    container: ubuntu:26.04
+    timeout-minutes: 20
+    steps:
+      - run: apt-get update -q && apt-get install -qy --no-install-recommends ca-certificates curl git jq unzip
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+      - uses: aphrody-labs/bun/.github/actions/setup-bun@main
+      - uses: astral-sh/setup-uv@v6
+      - run: bun install --frozen-lockfile
+      - run: bun run typecheck
+      - run: bun test
+      - run: bun run check

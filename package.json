@@ -1,0 +1,34 @@
+{
+  "name": "@aphrody/material-symbols-source",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Material Symbols sources of the aphrody branch: variable fonts (web WOFF2, desktop TTF), optimized 24 px SVGs and their manifest, regenerated with Bun.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "packageManager": "bun@1.4.3",
+  "engines": {
+    "bun": ">=1.4.2"
+  },
+  "scripts": {
+    "update": "bun scripts/update.ts",
+    "fonts": "bun scripts/fonts.ts",
+    "optimize": "bun scripts/optimize-svg.ts",
+    "manifest": "bun scripts/manifest.ts",
+    "build": "bun scripts/fonts.ts && bun scripts/optimize-svg.ts && bun scripts/manifest.ts",
+    "check": "bun scripts/optimize-svg.ts --check && bun scripts/manifest.ts --check && bun scripts/fonts.ts --check",
+    "subset": "bun scripts/subset.ts",
+    "fidelity": "bun scripts/fidelity.ts",
+    "cdn": "bun scripts/cdn.ts",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "oxlint scripts test",
+    "format": "oxfmt scripts test",
+    "format:check": "oxfmt --check scripts test"
+  },
+  "devDependencies": {
+    "@resvg/resvg-js": "^2.6.2",
+    "@types/bun": "^1.3.0",
+    "svgo": "^4.0.0",
+    "typescript": "^5.9.0"
+  }
+}
