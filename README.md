@@ -95,7 +95,7 @@ bun run build             # fonts (TTF + WOFF2 + codepoints), SVG optimization, 
 bun run check             # fails if any SVG, the manifest or a font is not in optimized form
 bun run subset --text "home search settings" [--styles outlined] [--axes "FILL=0:1 wght=400"]
 bun run fidelity          # renders 50 witness + every legacy SVG, optimized vs origin/master, with resvg
-bun test && bun run typecheck && bun run lint && bun run format:check
+bun test && bun check && bun lint && bun run format:check
 ```
 
 Font work (WOFF2 Brotli encode/decode, subsetting, instancing) runs fontTools through `uvx` at a pinned
