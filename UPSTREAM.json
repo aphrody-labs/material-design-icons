@@ -1,0 +1,14 @@
+{
+  "upstreamRepo": "google/material-design-icons",
+  "forkRepo": "aphrody-labs/material-design-icons",
+  "pinnedSha": "10ecc14790612ca8fd164e3f4ffe9c16fc50d5b7",
+  "extractedAt": "2026-11-20T21:59:21.671Z",
+  "upstreamSizeBytes": 5294638080,
+  "zstAtlasBytes": 28948,
+  "zstAtlasSha256": "a287cf8472f513146db2af1e2b4c0faf3cac4f4a8ebcfd83f34b1dbf8fe1c55f",
+  "counts": {
+    "outlined": 4304,
+    "rounded": 4304,
+    "sharp": 4304
+  }
+}
